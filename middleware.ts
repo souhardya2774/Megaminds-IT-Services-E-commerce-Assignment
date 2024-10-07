@@ -1,36 +1,36 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-const allowedOrigins = [
-    process.env.NEXT_PUBLIC_SERVER_URL
-];
+export function middleware(request: NextRequest) {
+  // Check if the request is for an API route
+  if (request.nextUrl.pathname.startsWith('/')) {
+    // Clone the request headers
+    const requestHeaders = new Headers(request.headers)
 
-export function middleware(req:NextRequest) {
-    // retrieve the current response
-    const res = NextResponse.next()
+    // Add CORS headers
+    const response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    })
 
-    // retrieve the HTTP "Origin" header 
-    // from the incoming request
-    const origin:(string|null)=req.headers.get("origin")
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.set('Access-Control-Max-Age', '86400')
 
-    console.log(origin);
-
-    // if the origin is an allowed one,
-    // add it to the 'Access-Control-Allow-Origin' header
-    if (origin && allowedOrigins.includes(origin)) {
-      res.headers.append('Access-Control-Allow-Origin', origin);
+    // Handle OPTIONS method
+    if (request.method === 'OPTIONS') {
+      return new NextResponse(null, { status: 204, headers: response.headers })
     }
 
-    // add the remaining CORS headers to the response
-    res.headers.append('Access-Control-Allow-Credentials', "true")
-    res.headers.append('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT')
-    res.headers.append(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    )
+    return response
+  }
 
-    return res
+  // For non-API routes, just proceed normally
+  return NextResponse.next()
 }
 
 export const config = {
-    matcher: '*',
+  matcher: '*',
 }

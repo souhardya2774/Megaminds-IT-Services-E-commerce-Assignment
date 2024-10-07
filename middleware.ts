@@ -1,36 +1,34 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
-  // Check if the request is for an API route
-  if (request.nextUrl.pathname.startsWith('/')) {
-    // Clone the request headers
-    const requestHeaders = new Headers(request.headers)
+const allowedOrigins = [
+    process.env.NEXT_PUBLIC_SERVER_URL
+];
 
-    // Add CORS headers
-    const response = NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    })
+export function middleware(req:NextRequest) {
+    // retrieve the current response
+    const res = NextResponse.next()
 
-    response.headers.set('Access-Control-Allow-Origin', '*')
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    response.headers.set('Access-Control-Max-Age', '86400')
+    // retrieve the HTTP "Origin" header 
+    // from the incoming request
+    const origin=req.headers.get("origin")
 
-    // Handle OPTIONS method
-    if (request.method === 'OPTIONS') {
-      return new NextResponse(null, { status: 204, headers: response.headers })
+    // if the origin is an allowed one,
+    // add it to the 'Access-Control-Allow-Origin' header
+    if (origin) {
+      res.headers.append('Access-Control-Allow-Origin', origin);
     }
 
-    return response
-  }
+    // add the remaining CORS headers to the response
+    res.headers.append('Access-Control-Allow-Credentials', "true")
+    res.headers.append('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT')
+    res.headers.append(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    )
 
-  // For non-API routes, just proceed normally
-  return NextResponse.next()
+    return res
 }
 
 export const config = {
-  matcher: '*',
+    matcher: '/:path*',
 }
